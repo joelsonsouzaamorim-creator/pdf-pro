@@ -9,9 +9,16 @@ let resultadosCompactarList=[] // [{bytes, nome}]
 
 // ===================== NAVEGAÇÃO =====================
 
+function atualizarAtalhosTopo(mostrar){
+  const atalhos=document.getElementById("topbar-shortcuts")
+  if(!atalhos) return
+  atalhos.style.display=mostrar ? "flex" : "none"
+}
+
 function abrirUnificador(filesParaCarregar){
   ocultarTudo()
   document.getElementById("unificador").style.display="block"
+  atualizarAtalhosTopo(true)
   if(filesParaCarregar && filesParaCarregar.length>0){
     carregarFilesNoJuntar(filesParaCarregar)
   }
@@ -20,6 +27,7 @@ function abrirUnificador(filesParaCarregar){
 function abrirDividir(fileParaCarregar){
   ocultarTudo()
   document.getElementById("dividir-pdf").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar){
     carregarFileNoDividir(fileParaCarregar)
   }
@@ -28,6 +36,7 @@ function abrirDividir(fileParaCarregar){
 function abrirOCR(fileParaCarregar){
   ocultarTudo()
   document.getElementById("ocr-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar){
     carregarFileNoOCR(fileParaCarregar)
   }
@@ -36,6 +45,7 @@ function abrirOCR(fileParaCarregar){
 function abrirCompactar(filesParaCarregar){
   ocultarTudo()
   document.getElementById("compactar-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(filesParaCarregar && filesParaCarregar.length>0){
     carregarFilesNoCompactar(filesParaCarregar)
   }
@@ -44,6 +54,7 @@ function abrirCompactar(filesParaCarregar){
 function abrirConverter(fileParaCarregar){
   ocultarTudo()
   document.getElementById("converter-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar){
     carregarFileNoConverter(fileParaCarregar)
   }
@@ -52,23 +63,27 @@ function abrirConverter(fileParaCarregar){
 function abrirJuntarPastas(){
   ocultarTudo()
   document.getElementById("juntarpastas-section").style.display="block"
+  atualizarAtalhosTopo(true)
 }
 
 function abrirWordParaPDF(fileParaCarregar){
   ocultarTudo()
   document.getElementById("wordpdf-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar) carregarFileNoWordPDF(fileParaCarregar)
 }
 
 function abrirExcelParaPDF(fileParaCarregar){
   ocultarTudo()
   document.getElementById("excelpdf-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar) carregarFileNoExcelPDF(fileParaCarregar)
 }
 
 function abrirExcelParaWord(fileParaCarregar){
   ocultarTudo()
   document.getElementById("excelword-section").style.display="block"
+  atualizarAtalhosTopo(true)
   if(fileParaCarregar) carregarFileNoExcelWord(fileParaCarregar)
 }
 
@@ -85,7 +100,20 @@ function ocultarTudo(){
   document.getElementById("juntarpastas-section").style.display="none"
 }
 
+function limparEstadosAoVoltarMenu(){
+  try{ limparJuntar() }catch(e){}
+  try{ limparDividir() }catch(e){}
+  try{ limparOCR() }catch(e){}
+  try{ limparCompactar() }catch(e){}
+  try{ limparConverter() }catch(e){}
+  try{ limparWordPDF() }catch(e){}
+  try{ limparExcelPDF() }catch(e){}
+  try{ limparExcelWord() }catch(e){}
+  try{ limparJuntarPastas() }catch(e){}
+}
+
 function voltarMenu(){
+  limparEstadosAoVoltarMenu()
   document.getElementById("menu-principal").style.display="block"
   document.getElementById("unificador").style.display="none"
   document.getElementById("dividir-pdf").style.display="none"
@@ -96,9 +124,15 @@ function voltarMenu(){
   document.getElementById("excelpdf-section").style.display="none"
   document.getElementById("excelword-section").style.display="none"
   document.getElementById("juntarpastas-section").style.display="none"
+  atualizarAtalhosTopo(false)
 }
 
-
+function irParaFerramenta(destino){
+  limparEstadosAoVoltarMenu()
+  if(destino==="juntar") abrirUnificador()
+  else if(destino==="dividir") abrirDividir()
+  else if(destino==="compactar") abrirCompactar()
+}
 // ===================== UTILIDADES =====================
 
 function bytesParaFile(bytes, nome){
@@ -175,10 +209,20 @@ function fecharModalBtn(){
   document.getElementById("modal-paginas").style.display="none"
 }
 
-async function criarThumbCard(file){
+async function criarThumbCard(file, idx=null){
   const card=document.createElement("div")
   card.className="thumb-card"
   card.onclick=()=>abrirPaginasModal(file)
+
+  const btnRemover=document.createElement("button")
+  btnRemover.className="thumb-remover"
+  btnRemover.type="button"
+  btnRemover.setAttribute("aria-label","Remover arquivo")
+  btnRemover.textContent="✕"
+  btnRemover.onclick=(e)=>{
+    e.stopPropagation()
+    if(idx!==null) removerArquivoJuntar(idx)
+  }
 
   // Placeholder imediato — sem bloquear
   const canvas=document.createElement("canvas")
@@ -206,6 +250,7 @@ async function criarThumbCard(file){
   pags.className="thumb-paginas"
   pags.textContent="..."
 
+  card.appendChild(btnRemover)
   card.appendChild(canvas)
   card.appendChild(nome)
   card.appendChild(pags)
@@ -244,10 +289,141 @@ let resultadosPastasJuntar=[]
 const fileInput=document.getElementById("fileInput")
 const gallery=document.getElementById("file-gallery")
 
+
+function arquivoEhZip(file){
+  return /\.zip$/i.test(file.name||"") || file.type==="application/zip" || file.type==="application/x-zip-compressed"
+}
+
+function obterTipoPorNome(nome){
+  const n=(nome||"").toLowerCase()
+  if(n.endsWith(".pdf")) return "application/pdf"
+  if(n.endsWith(".png")) return "image/png"
+  if(n.endsWith(".jpg")||n.endsWith(".jpeg")) return "image/jpeg"
+  if(n.endsWith(".webp")) return "image/webp"
+  return ""
+}
+
+function arquivoValidoJuntarPorNome(nome){
+  return /\.(pdf|png|jpe?g|webp)$/i.test(nome||"")
+}
+
+function nomeBaseSemExtensao(nome){
+  return (nome||"arquivo").replace(/\.[^.]+$/,"")
+}
+
+function rerenderPastasJuntar(){
+  const row=document.getElementById("pastas-adicionadas")
+  if(!row) return
+  row.innerHTML=""
+  for(let i=0;i<pastasJuntar.length;i++) renderizarPastaThumb(i)
+}
+
+function adicionarOuSubstituirPastaJuntar(nomePasta, arquivosPasta){
+  const idxExistente=pastasJuntar.findIndex(p=>p.nomePasta===nomePasta && p.arquivos.length===arquivosPasta.length)
+  if(idxExistente>=0){
+    const desejaSubstituir=confirm('Já consta uma pasta com o mesmo nome ("'+nomePasta+'") e a mesma quantidade de documentos ('+arquivosPasta.length+').\\n\\nClique em OK para substituir ou em Cancelar para manter a atual.')
+    if(!desejaSubstituir) return {adicionada:false, substituida:false}
+    pastasJuntar[idxExistente]={nomePasta, arquivos:arquivosPasta}
+    rerenderPastasJuntar()
+    atualizarInfoJuntar()
+    return {adicionada:true, substituida:true}
+  }
+  pastasJuntar.push({nomePasta, arquivos:arquivosPasta})
+  renderizarPastaThumb(pastasJuntar.length-1)
+  atualizarInfoJuntar()
+  return {adicionada:true, substituida:false}
+}
+
+async function extrairPastasDeZipParaJuntar(zipFile){
+  const JSZip=await carregarJSZip()
+  const zip=await JSZip.loadAsync(await zipFile.arrayBuffer())
+  const grupos=new Map()
+  const zipBase=nomeBaseSemExtensao(zipFile.name)
+
+  const entradas=Object.values(zip.files)
+  for(const entry of entradas){
+    if(entry.dir) continue
+    if(!arquivoValidoJuntarPorNome(entry.name)) continue
+
+    const partes=entry.name.split("/").filter(Boolean)
+    if(partes.length===0) continue
+
+    let nomePasta=zipBase
+    let caminhoInterno=entry.name
+
+    if(partes.length>1){
+      nomePasta=partes[0]
+      caminhoInterno=partes.slice(1).join("/")
+    }
+
+    const tipo=obterTipoPorNome(entry.name)
+    const bytes=await entry.async("uint8array")
+    const arquivo=new File([bytes], partes[partes.length-1], {type:tipo||"application/octet-stream"})
+    try{
+      Object.defineProperty(arquivo, "webkitRelativePath", {
+        value: nomePasta + "/" + caminhoInterno,
+        configurable: true
+      })
+    }catch(e){}
+    if(!grupos.has(nomePasta)) grupos.set(nomePasta, [])
+    grupos.get(nomePasta).push(arquivo)
+  }
+
+  return Array.from(grupos.entries()).map(([nomePasta, arquivos])=>({nomePasta, arquivos}))
+}
+
+async function processarZipNoJuntar(zipFile){
+  mostrarLoading("Lendo ZIP: "+zipFile.name+"...")
+  const grupos=await extrairPastasDeZipParaJuntar(zipFile)
+  if(grupos.length===0){
+    esconderLoading()
+    alert("Nenhum PDF ou imagem válido foi encontrado no ZIP.")
+    return
+  }
+
+  let adicionadas=0
+  let substituidas=0
+  for(const grupo of grupos){
+    const r=adicionarOuSubstituirPastaJuntar(grupo.nomePasta, grupo.arquivos)
+    if(r.adicionada) adicionadas++
+    if(r.substituida) substituidas++
+  }
+
+  esconderLoading()
+  if(substituidas>0){
+    mostrarSucesso("ZIP carregado com substituição de pasta(s).")
+  }else{
+    mostrarSucesso(adicionadas+" pasta"+(adicionadas>1?"s adicionadas":" adicionada")+" via ZIP!")
+  }
+}
+
+async function processarEntradaJuntar(files){
+  const zips=files.filter(arquivoEhZip)
+  const comuns=files.filter(f=>!arquivoEhZip(f))
+  if(comuns.length>0) await carregarFilesNoJuntar(comuns)
+  for(const zip of zips){
+    await processarZipNoJuntar(zip)
+  }
+}
+
 fileInput.addEventListener("change",async(e)=>{
-  await carregarFilesNoJuntar(Array.from(e.target.files))
+  await processarEntradaJuntar(Array.from(e.target.files))
   fileInput.value=""
 })
+
+async function renderizarArquivosJuntar(){
+  gallery.innerHTML=""
+  for(let i=0;i<arquivos.length;i++){
+    const {card}=await criarThumbCard(arquivos[i], i)
+    gallery.appendChild(card)
+  }
+}
+
+function removerArquivoJuntar(idx){
+  arquivos.splice(idx,1)
+  renderizarArquivosJuntar()
+  atualizarInfoJuntar()
+}
 
 // ===================== DRAG AND DROP UNIFICADO =====================
 
@@ -300,8 +476,7 @@ document.addEventListener("drop",async(e)=>{
         if(tipo==="juntar"){
           const validos=todos.filter(f=>f.type==="application/pdf"||f.type.startsWith("image/"))
           if(validos.length===0){esconderLoading();alert("Nenhum PDF encontrado: "+entry.name);continue}
-          pastasJuntar.push({nomePasta:entry.name,arquivos:validos})
-          renderizarPastaThumb(pastasJuntar.length-1)
+          adicionarOuSubstituirPastaJuntar(entry.name, validos)
         }else if(tipo==="compactar"){
           const pdfs=todos.filter(f=>f.type==="application/pdf")
           if(pdfs.length>0) await carregarFilesNoCompactar(pdfs)
@@ -315,8 +490,10 @@ document.addEventListener("drop",async(e)=>{
       }else{
         const file=await entryParaFile(entry)
         if(!file) continue
-        if(tipo==="juntar"&&(file.type==="application/pdf"||file.type.startsWith("image/")))
-          await carregarFilesNoJuntar([file])
+        if(tipo==="juntar"){
+          if(arquivoEhZip(file)) await processarZipNoJuntar(file)
+          else if(file.type==="application/pdf"||file.type.startsWith("image/")) await carregarFilesNoJuntar([file])
+        }
         else if(tipo==="compactar"&&file.type==="application/pdf")
           await carregarFilesNoCompactar([file])
         else if(tipo==="dividir"&&file.type==="application/pdf")
@@ -334,8 +511,7 @@ document.addEventListener("drop",async(e)=>{
   // Fallback sem FileSystemEntry
   const files=Array.from(e.dataTransfer.files||[])
   if(tipo==="juntar"){
-    const validos=files.filter(f=>f.type==="application/pdf"||f.type.startsWith("image/"))
-    if(validos.length>0) await carregarFilesNoJuntar(validos)
+    await processarEntradaJuntar(files)
   }else if(tipo==="compactar"){
     const pdfs=files.filter(f=>f.type==="application/pdf")
     if(pdfs.length>0) await carregarFilesNoCompactar(pdfs)
@@ -392,11 +568,11 @@ function selecionarPasta(){
     if(files.length===0){alert("Nenhum PDF ou imagem encontrado na pasta.");return}
     mostrarLoading("Carregando pasta: "+files.length+" arquivo"+(files.length>1?"s":"")+"...")
     const nomePasta=files[0].webkitRelativePath.split("/")[0]||("Pasta "+(pastasJuntar.length+1))
-    pastasJuntar.push({nomePasta,arquivos:files})
-    renderizarPastaThumb(pastasJuntar.length-1)
-    atualizarInfoJuntar()
+    const resultado=adicionarOuSubstituirPastaJuntar(nomePasta, files)
     esconderLoading()
-    mostrarSucesso("Pasta \""+nomePasta+"\" carregada!")
+    if(resultado.adicionada){
+      mostrarSucesso(resultado.substituida ? 'Pasta "'+nomePasta+'" substituída!' : 'Pasta "'+nomePasta+'" carregada!')
+    }
   })
   input.click()
 }
@@ -531,7 +707,15 @@ function atualizarProgressoJuntar(percentual, titulo="", subtitulo=""){
 
 function ocultarProgressoJuntar(){
   const card=document.getElementById("juntar-progress-card")
-  if(card) card.style.display="none"
+  const fill=document.getElementById("juntar-progress-fill")
+  const label=document.getElementById("juntar-progress-label")
+  const percent=document.getElementById("juntar-progress-percent")
+  const sub=document.getElementById("juntar-progress-subtext")
+  if(card) card.style.display="block"
+  if(fill) fill.style.width="0%"
+  if(label) label.textContent="Aguardando arquivos"
+  if(percent) percent.textContent="0%"
+  if(sub) sub.textContent="A barra de progresso aparece aqui durante a geração do PDF."
 }
 async function imagemParaPDF(file){
   const novoPdf=await PDFLib.PDFDocument.create()
@@ -557,9 +741,8 @@ async function carregarFilesNoJuntar(files){
       catch(e){ esconderLoading(); alert("Não foi possível converter: "+file.name); continue }
     }
     arquivos.push(fileFinal)
-    const {card}=await criarThumbCard(fileFinal)
-    gallery.appendChild(card)
   }
+  await renderizarArquivosJuntar()
   esconderLoading()
   mostrarSucesso(files.length+" arquivo"+(files.length>1?"s carregados":"carregado")+"!")
   atualizarInfoJuntar()
@@ -696,6 +879,20 @@ async function gerarPDFsPorPasta(){
   document.getElementById("resultado-pastas").style.display="block"
   document.getElementById("resultado-pastas").scrollIntoView({behavior:"smooth"})
   atualizarProgressoJuntar(100,"PDFs prontos","Os arquivos por pasta já podem ser baixados.")
+  await baixarResultadosPastasAutomaticamente()
+}
+
+async function baixarResultadosPastasAutomaticamente(){
+  if(resultadosPastasJuntar.length===1){
+    baixarArquivo(resultadosPastasJuntar[0].bytes,resultadosPastasJuntar[0].nome)
+    mostrarSucesso("Download iniciado automaticamente.")
+    return
+  }
+
+  if(resultadosPastasJuntar.length>1){
+    await baixarTudoZipado()
+    mostrarSucesso("ZIP iniciado automaticamente.")
+  }
 }
 
 async function baixarTudoZipado(){
