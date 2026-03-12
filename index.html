@@ -30,59 +30,107 @@
 
   <!-- MENU PRINCIPAL -->
   <section id="menu-principal">
-    <h1>Ferramentas</h1>
-    <p>Escolha uma ferramenta</p>
+
+    <div class="menu-hero">
+      <div class="menu-hero-text">
+        <h1>PDFLicita <span>PRO</span></h1>
+        <p>Ferramentas inteligentes para gestão de documentos em licitações</p>
+      </div>
+    </div>
+
+    <div class="menu-section-label">✅ Disponível agora</div>
     <div class="tools-grid">
 
       <div class="tool-card active" onclick="abrirUnificador()">
-        <div class="tool-icon">📄</div>
-        <h3>Juntar PDF</h3>
-        <p>Unificar documentos</p>
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
+          <span>📄</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Juntar PDF</h3>
+          <p>Una vários documentos e pastas em um único PDF</p>
+        </div>
+        <div class="tool-card-arrow">→</div>
       </div>
 
       <div class="tool-card active" onclick="abrirDividir()">
-        <div class="tool-icon">✂️</div>
-        <h3>Dividir PDF</h3>
-        <p>Separar páginas</p>
-      </div>
-
-      <div class="tool-card active" onclick="abrirOCR()">
-        <div class="tool-icon">🔎</div>
-        <h3>Reconhecimento de Texto</h3>
-        <p>Extrair texto</p>
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#0ea5e9,#2563eb)">
+          <span>✂️</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Dividir PDF</h3>
+          <p>Separe páginas por quantidade, tamanho ou paridade</p>
+        </div>
+        <div class="tool-card-arrow">→</div>
       </div>
 
       <div class="tool-card active" onclick="abrirCompactar()">
-        <div class="tool-icon">🗜️</div>
-        <h3>Compactar PDF</h3>
-        <p>Reduzir tamanho</p>
-      </div>
-
-      <div class="tool-card active" onclick="abrirConverter()">
-        <div class="tool-icon">📝</div>
-        <h3>PDF para Word</h3>
-        <p>Converter documento</p>
-      </div>
-
-      <div class="tool-card active" onclick="abrirWordParaPDF()">
-        <div class="tool-icon">🔄</div>
-        <h3>Word para PDF</h3>
-        <p>Converter documento</p>
-      </div>
-
-      <div class="tool-card active" onclick="abrirExcelParaPDF()">
-        <div class="tool-icon">📊</div>
-        <h3>Excel para PDF</h3>
-        <p>Converter planilha</p>
-      </div>
-
-      <div class="tool-card active" onclick="abrirExcelParaWord()">
-        <div class="tool-icon">📋</div>
-        <h3>Excel para Word</h3>
-        <p>Converter planilha</p>
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#10b981,#059669)">
+          <span>🗜️</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Compactar PDF</h3>
+          <p>Reduza o tamanho dos arquivos sem perder qualidade</p>
+        </div>
+        <div class="tool-card-arrow">→</div>
       </div>
 
     </div>
+
+    <div class="menu-section-label soon-label">🚀 Em breve</div>
+    <div class="tools-grid tools-grid-soon">
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+          <span>🔎</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Reconhecimento de Texto</h3>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+          <span>📝</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>PDF para Word</h3>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#ec4899,#db2777)">
+          <span>🔄</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Word para PDF</h3>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">
+          <span>📊</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Excel para PDF</h3>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#84cc16,#65a30d)">
+          <span>📋</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Excel para Word</h3>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+    </div>
+
   </section>
 
 
@@ -95,11 +143,6 @@
         <h2>Unificador de PDF</h2>
         <p id="file-counter">Nenhum arquivo carregado</p>
       </div>
-    </div>
-
-    <div class="file-name-box">
-      <label>Nome do arquivo final (para arquivos avulsos)</label>
-      <input type="text" id="finalFileName" placeholder="Ex: Lote_01">
     </div>
 
     <div id="drop-zone" class="drop-zone">
@@ -148,8 +191,8 @@
 
     <div class="fixed-bar">
       <span id="juntar-info" class="bar-info"></span>
+      <button id="actionBtn" class="btn generate">juntar PDF</button>
       <button onclick="limparJuntar()" class="btn danger">🗑 Limpar Tudo</button>
-      <button id="actionBtn" class="btn generate">CONSOLIDAR PDF</button>
     </div>
 
   </section>
@@ -181,27 +224,31 @@
       <label>Modo de divisão</label>
       <div class="radio-group">
 
-        <label>
+        <label onclick="mostrarInputDivisao('pages')">
           <input type="radio" name="splitMode" value="pages" checked>
           Dividir por quantidade de páginas
         </label>
-        <input type="number" id="pagesPerFile" placeholder="Ex: 5 páginas">
+        <div class="input-divisao" id="input-pages">
+          <input type="number" id="pagesPerFile" placeholder="Qtd de páginas por arquivo" min="1">
+        </div>
 
-        <label>
+        <label onclick="mostrarInputDivisao('size')">
+          <input type="radio" name="splitMode" value="size">
+          Dividir por tamanho (MB)
+        </label>
+        <div class="input-divisao" id="input-size" style="display:none">
+          <input type="number" id="sizePerFile" placeholder="Tamanho máximo em MB" min="1">
+        </div>
+
+        <label onclick="mostrarInputDivisao('odd')">
           <input type="radio" name="splitMode" value="odd">
           Somente páginas ímpares
         </label>
 
-        <label>
+        <label onclick="mostrarInputDivisao('even')">
           <input type="radio" name="splitMode" value="even">
           Somente páginas pares
         </label>
-
-        <label>
-          <input type="radio" name="splitMode" value="size">
-          Dividir por tamanho do arquivo (MB)
-        </label>
-        <input type="number" id="sizePerFile" placeholder="Ex: 5 MB">
 
       </div>
     </div>
@@ -220,8 +267,8 @@
 
     <div class="fixed-bar">
       <span id="dividir-info" class="bar-info"></span>
-      <button onclick="limparDividir()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="dividirPDF()" class="btn generate">DIVIDIR PDF</button>
+      <button onclick="limparDividir()" class="btn danger">🗑 Limpar Tudo</button>
     </div>
 
   </section>
@@ -265,8 +312,9 @@
 
     <div class="fixed-bar">
       <span id="ocr-info" class="bar-info"></span>
-      <button onclick="limparOCR()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="reconhecerTexto()" class="btn generate">RECONHECER TEXTO</button>
+      <button onclick="limparOCR()" class="btn danger">🗑 Limpar Tudo</button>
+
     </div>
 
   </section>
@@ -285,12 +333,11 @@
 
     <div id="compactar-drop-zone" class="drop-zone">
       <input type="file" id="compactarInput" accept="application/pdf" multiple hidden>
-      <input type="file" id="compactarPastaInput" webkitdirectory hidden>
-      <h3>Arraste PDFs ou uma pasta aqui</h3>
+      <h3>Arraste PDFs ou pastas aqui</h3>
       <p>ou selecione abaixo</p>
       <div class="drop-buttons">
         <button onclick="compactarInput.click()" class="btn primary">Selecionar Arquivos</button>
-        <button onclick="compactarPastaInput.click()" class="btn primary">Selecionar Pasta</button>
+        <button onclick="selecionarPastaCompactar()" class="btn primary">Selecionar Pasta</button>
       </div>
     </div>
 
@@ -307,7 +354,7 @@
 
         <label>
           <input type="radio" name="compactMode" value="extrema">
-          Extrema — redução mínima de 50%, menor qualidade de imagens
+          Extrema
         </label>
 
       </div>
@@ -330,8 +377,9 @@
 
     <div class="fixed-bar">
       <span id="compactar-info" class="bar-info"></span>
-      <button onclick="limparCompactar()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="compactarPDFs()" class="btn generate">COMPACTAR PDF</button>
+      <button onclick="limparCompactar()" class="btn danger">🗑 Limpar Tudo</button>
+ 
     </div>
 
   </section>
@@ -374,8 +422,8 @@
 
     <div class="fixed-bar">
       <span id="converter-info" class="bar-info"></span>
-      <button onclick="limparConverter()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="converterParaWord()" class="btn generate">CONVERTER PARA WORD</button>
+      <button onclick="limparConverter()" class="btn danger">🗑 Limpar Tudo</button>
     </div>
 
   </section>
@@ -414,8 +462,8 @@
     </div>
     <div class="fixed-bar">
       <span id="wordpdf-bar-info" class="bar-info"></span>
-      <button onclick="limparWordPDF()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="converterWordParaPDF()" class="btn generate">CONVERTER PARA PDF</button>
+      <button onclick="limparWordPDF()" class="btn danger">🗑 Limpar Tudo</button>
     </div>
   </section>
 
@@ -453,8 +501,8 @@
     </div>
     <div class="fixed-bar">
       <span id="excelpdf-bar-info" class="bar-info"></span>
-      <button onclick="limparExcelPDF()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="converterExcelParaPDF()" class="btn generate">CONVERTER PARA PDF</button>
+      <button onclick="limparExcelPDF()" class="btn danger">🗑 Limpar Tudo</button>
     </div>
   </section>
 
@@ -489,8 +537,8 @@
     </div>
     <div class="fixed-bar">
       <span id="excelword-bar-info" class="bar-info"></span>
-      <button onclick="limparExcelWord()" class="btn danger">🗑 Limpar Tudo</button>
       <button onclick="converterExcelParaWord()" class="btn generate">CONVERTER PARA WORD</button>
+      <button onclick="limparExcelWord()" class="btn danger">🗑 Limpar Tudo</button>
     </div>
   </section>
 
@@ -547,3 +595,4 @@
 
 </body>
 </html>
+
