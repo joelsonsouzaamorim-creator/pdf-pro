@@ -9,7 +9,7 @@
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23e53e3e'/%3E%3Cpath d='M14 10 h24 l12 12 v32 a2 2 0 0 1-2 2 H14 a2 2 0 0 1-2-2 V12 a2 2 0 0 1 2-2z' fill='white'/%3E%3Cpath d='M38 10 l12 12 H40 a2 2 0 0 1-2-2z' fill='%23f87171'/%3E%3Ctext x='32' y='46' font-family='Arial Black,sans-serif' font-size='13' font-weight='900' fill='%23e53e3e' text-anchor='middle'%3EPDF%3C/text%3E%3C/svg%3E">
 
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style_zip_substituir_profissional.css">
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -25,6 +25,12 @@
   <div class="logo">
     <div class="logo-icon">P</div>
     <span>PDFLicita <b>PRO</b></span>
+  </div>
+  <div id="topbar-shortcuts" class="topbar-shortcuts" style="display:none">
+    <span class="sec-atalho-label">Ir para:</span>
+    <button onclick="irParaFerramenta('juntar')" class="btn atalho">📄 Juntar PDF</button>
+    <button onclick="irParaFerramenta('dividir')" class="btn atalho">✂️ Dividir PDF</button>
+    <button onclick="irParaFerramenta('compactar')" class="btn atalho">🗜️ Compactar PDF</button>
   </div>
 </header>
 
@@ -188,21 +194,27 @@
         <h2>📄 Juntar PDF</h2>
         <p id="file-counter">Nenhum arquivo carregado</p>
       </div>
-      <div class="sec-atalhos">
-        <span class="sec-atalho-label">Ir para:</span>
-        <button onclick="voltarMenu();abrirDividir()" class="btn atalho">✂️ Dividir</button>
-        <button onclick="voltarMenu();abrirCompactar()" class="btn atalho">🗜️ Compactar</button>
-      </div>
     </div>
 
     <div id="drop-zone" class="drop-zone">
-      <input type="file" id="fileInput" multiple accept="application/pdf,image/*" hidden>
-      <h3>Arraste arquivos ou pastas aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <input type="file" id="fileInput" multiple accept="application/pdf,image/*,.zip,application/zip" hidden>
+      <h3>Arraste arquivos, pastas ou ZIP aqui</h3>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="fileInput.click()" class="btn primary">Selecionar Arquivos</button>
         <button onclick="selecionarPasta()" class="btn primary">Selecionar Pasta</button>
       </div>
+    </div>
+
+    <div id="juntar-progress-card" class="progress-card progress-card-static">
+      <div class="progress-head">
+        <strong id="juntar-progress-label">Aguardando arquivos</strong>
+        <span id="juntar-progress-percent">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="juntar-progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="juntar-progress-subtext" class="progress-subtext">A barra de progresso aparece aqui durante a geração do PDF.</div>
     </div>
 
     <!-- Área de pastas adicionadas -->
@@ -210,16 +222,6 @@
 
     <!-- Área de arquivos avulsos -->
     <div id="file-gallery" class="gallery"></div>
-    <div id="juntar-progress-card" class="progress-card" style="display:none">
-      <div class="progress-head">
-        <strong id="juntar-progress-label">Preparando...</strong>
-        <span id="juntar-progress-percent">0%</span>
-      </div>
-      <div class="progress-track">
-        <div id="juntar-progress-fill" class="progress-fill"></div>
-      </div>
-      <div id="juntar-progress-subtext" class="progress-subtext"></div>
-    </div>
 
     <!-- Painel resultado juntar -->
     <div id="resultado-juntar" class="resultado-painel" style="display:none">
@@ -276,7 +278,7 @@
     <div id="split-drop-zone" class="drop-zone">
       <input type="file" id="splitFileInput" accept="application/pdf" hidden>
       <h3>Arraste um ou mais PDFs aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="splitFileInput.click()" class="btn primary">Selecionar PDF</button>
       </div>
@@ -352,7 +354,7 @@
     <div id="ocr-drop-zone" class="drop-zone">
       <input type="file" id="ocrInput" accept="application/pdf" multiple hidden>
       <h3>Arraste um ou mais PDFs aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="ocrInput.click()" class="btn primary">Selecionar PDFs</button>
       </div>
@@ -401,7 +403,7 @@
     <div id="compactar-drop-zone" class="drop-zone">
       <input type="file" id="compactarInput" accept="application/pdf" multiple hidden>
       <h3>Arraste PDFs ou pastas aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="compactarInput.click()" class="btn primary">Selecionar Arquivos</button>
         <button onclick="selecionarPastaCompactar()" class="btn primary">Selecionar Pasta</button>
@@ -464,7 +466,7 @@
     <div id="converter-drop-zone" class="drop-zone">
       <input type="file" id="converterInput" accept="application/pdf" hidden>
       <h3>Arraste um ou mais PDFs aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="converterInput.click()" class="btn primary">Selecionar PDF</button>
       </div>
@@ -506,7 +508,7 @@
     <div id="wordpdf-drop-zone" class="drop-zone">
       <input type="file" id="wordpdfInput" accept=".doc,.docx,.odt,.rtf" hidden>
       <h3>Arraste o arquivo Word aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="wordpdfInput.click()" class="btn primary">Selecionar Word (.docx)</button>
       </div>
@@ -545,7 +547,7 @@
     <div id="excelpdf-drop-zone" class="drop-zone">
       <input type="file" id="excelpdfInput" accept=".xls,.xlsx,.xlsm,.xlsb,.csv,.ods" hidden>
       <h3>Arraste o arquivo Excel aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="excelpdfInput.click()" class="btn primary">Selecionar Excel (.xlsx)</button>
       </div>
@@ -584,7 +586,7 @@
     <div id="excelword-drop-zone" class="drop-zone">
       <input type="file" id="excelwordInput" accept=".xls,.xlsx,.xlsm,.xlsb,.csv,.ods" hidden>
       <h3>Arraste o arquivo Excel aqui</h3>
-      <p>ou selecione abaixo para gerar PDF pesquisável</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="excelwordInput.click()" class="btn primary">Selecionar Excel (.xlsx)</button>
       </div>
@@ -657,7 +659,7 @@
   </div>
 </div>
 
-<script src="script.js"></script>
+<script src="script_zip_substituir_profissional.js"></script>
 
 </body>
 </html>
