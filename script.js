@@ -176,10 +176,21 @@ function fecharModalBtn(){
 }
 
 async function criarThumbCard(file){
-  const {canvas, totalPaginas}=await renderizarCapa(file)
   const card=document.createElement("div")
   card.className="thumb-card"
   card.onclick=()=>abrirPaginasModal(file)
+
+  // Placeholder imediato — sem bloquear
+  const canvas=document.createElement("canvas")
+  canvas.width=94
+  canvas.height=120
+  const ctx=canvas.getContext("2d")
+  ctx.fillStyle="#f3f4f6"
+  ctx.fillRect(0,0,94,120)
+  ctx.fillStyle="#9ca3af"
+  ctx.font="28px sans-serif"
+  ctx.textAlign="center"
+  ctx.fillText("📄",47,65)
 
   const nome=document.createElement("div")
   nome.className="thumb-nome"
@@ -187,12 +198,34 @@ async function criarThumbCard(file){
 
   const pags=document.createElement("div")
   pags.className="thumb-paginas"
-  pags.textContent=totalPaginas+" página"+(totalPaginas>1?"s":"")
+  pags.textContent="..."
 
   card.appendChild(canvas)
   card.appendChild(nome)
   card.appendChild(pags)
+
+  // Renderizar capa em background sem bloquear o loop
+  let totalPaginas=1
+  renderizarCapaAsync(file, canvas, pags).then(n=>{ totalPaginas=n })
+
   return {card, totalPaginas}
+}
+
+async function renderizarCapaAsync(file, canvas, pagsEl){
+  try{
+    const arrayBuffer=await file.arrayBuffer()
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise
+    const page=await pdf.getPage(1)
+    const viewport=page.getViewport({scale:0.4})
+    canvas.width=viewport.width
+    canvas.height=viewport.height
+    await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise
+    pagsEl.textContent=pdf.numPages+" página"+(pdf.numPages>1?"s":"")
+    return pdf.numPages
+  }catch(e){
+    pagsEl.textContent="—"
+    return 1
+  }
 }
 
 
@@ -210,6 +243,131 @@ fileInput.addEventListener("change",async(e)=>{
   fileInput.value=""
 })
 
+// ===================== DRAG AND DROP UNIFICADO =====================
+
+const DROP_ZONES={
+  "#drop-zone":           "juntar",
+  "#compactar-drop-zone": "compactar",
+  "#split-drop-zone":     "dividir"
+}
+
+function getZona(el){
+  for(let [sel,tipo] of Object.entries(DROP_ZONES)){
+    if(el.closest(sel)) return {zone:el.closest(sel), tipo}
+  }
+  return null
+}
+
+document.addEventListener("dragenter",(e)=>{
+  const r=getZona(e.target)
+  if(r){e.preventDefault();r.zone.classList.add("drag-over")}
+})
+
+document.addEventListener("dragover",(e)=>{
+  const r=getZona(e.target)
+  if(r){e.preventDefault();r.zone.classList.add("drag-over")}
+})
+
+document.addEventListener("dragleave",(e)=>{
+  const r=getZona(e.target)
+  if(r&&!r.zone.contains(e.relatedTarget)) r.zone.classList.remove("drag-over")
+})
+
+document.addEventListener("drop",async(e)=>{
+  const r=getZona(e.target)
+  if(!r) return
+  e.preventDefault()
+  e.stopPropagation()
+  r.zone.classList.remove("drag-over")
+
+  const {tipo}=r
+  const items=Array.from(e.dataTransfer.items||[])
+
+  // Processar via FileSystemEntry (detecta pastas)
+  if(items.length>0 && items[0].webkitGetAsEntry){
+    const entries=items.map(i=>i.webkitGetAsEntry()).filter(Boolean)
+    for(let entry of entries){
+      if(entry.isDirectory){
+        mostrarLoading("Lendo pasta: "+entry.name+"...")
+        const todos=await lerDiretorio(entry)
+        if(tipo==="juntar"){
+          const validos=todos.filter(f=>f.type==="application/pdf"||f.type.startsWith("image/"))
+          if(validos.length===0){esconderLoading();alert("Nenhum PDF encontrado: "+entry.name);continue}
+          pastasJuntar.push({nomePasta:entry.name,arquivos:validos})
+          renderizarPastaThumb(pastasJuntar.length-1)
+        }else if(tipo==="compactar"){
+          const pdfs=todos.filter(f=>f.type==="application/pdf")
+          if(pdfs.length>0) await carregarFilesNoCompactar(pdfs)
+        }else if(tipo==="dividir"){
+          const pdf=todos.find(f=>f.type==="application/pdf")
+          if(pdf) await carregarFileNoDividir(pdf)
+        }
+      }else{
+        const file=await entryParaFile(entry)
+        if(!file) continue
+        if(tipo==="juntar"&&(file.type==="application/pdf"||file.type.startsWith("image/")))
+          await carregarFilesNoJuntar([file])
+        else if(tipo==="compactar"&&file.type==="application/pdf")
+          await carregarFilesNoCompactar([file])
+        else if(tipo==="dividir"&&file.type==="application/pdf")
+          await carregarFileNoDividir(file)
+      }
+    }
+    if(tipo==="juntar") atualizarInfoJuntar()
+    esconderLoading()
+    mostrarSucesso("Carregado!")
+    return
+  }
+
+  // Fallback sem FileSystemEntry
+  const files=Array.from(e.dataTransfer.files||[])
+  if(tipo==="juntar"){
+    const validos=files.filter(f=>f.type==="application/pdf"||f.type.startsWith("image/"))
+    if(validos.length>0) await carregarFilesNoJuntar(validos)
+  }else if(tipo==="compactar"){
+    const pdfs=files.filter(f=>f.type==="application/pdf")
+    if(pdfs.length>0) await carregarFilesNoCompactar(pdfs)
+  }else if(tipo==="dividir"){
+    const pdf=files.find(f=>f.type==="application/pdf")
+    if(pdf) await carregarFileNoDividir(pdf)
+  }
+})
+
+// Lê recursivamente todos os arquivos de um diretório
+async function lerDiretorio(dirEntry){
+  const result=[]
+  const reader=dirEntry.createReader()
+
+  // readEntries retorna no máximo 100 por vez — precisa chamar até retornar array vazio
+  async function lerTodosOsLotes(){
+    return new Promise((resolve,reject)=>{
+      reader.readEntries(resolve, reject)
+    })
+  }
+
+  let lote
+  do{
+    lote=await lerTodosOsLotes()
+    for(let entry of lote){
+      if(entry.isFile){
+        const file=await entryParaFile(entry)
+        if(file) result.push(file)
+      }else if(entry.isDirectory){
+        const sub=await lerDiretorio(entry)
+        result.push(...sub)
+      }
+    }
+  }while(lote.length>0)
+
+  return result
+}
+
+function entryParaFile(entry){
+  return new Promise((resolve)=>{
+    entry.file(f=>resolve(f),()=>resolve(null))
+  })
+}
+
 function selecionarPasta(){
   const input=document.createElement("input")
   input.type="file"
@@ -220,10 +378,13 @@ function selecionarPasta(){
     const files=Array.from(e.target.files).filter(f=>f.type==="application/pdf"||f.type.startsWith("image/"))
     document.body.removeChild(input)
     if(files.length===0){alert("Nenhum PDF ou imagem encontrado na pasta.");return}
+    mostrarLoading("Carregando pasta: "+files.length+" arquivo"+(files.length>1?"s":"")+"...")
     const nomePasta=files[0].webkitRelativePath.split("/")[0]||("Pasta "+(pastasJuntar.length+1))
     pastasJuntar.push({nomePasta,arquivos:files})
     renderizarPastaThumb(pastasJuntar.length-1)
     atualizarInfoJuntar()
+    esconderLoading()
+    mostrarSucesso("Pasta \""+nomePasta+"\" carregada!")
   })
   input.click()
 }
@@ -305,7 +466,41 @@ function removerPastaJuntar(idx){
   atualizarInfoJuntar()
 }
 
-// Converte imagem para PDF de uma página
+// ===================== TOAST DE CARREGAMENTO =====================
+
+let toastTimer=null
+
+function mostrarLoading(msg){
+  let toast=document.getElementById("toast-loading")
+  if(!toast){
+    toast=document.createElement("div")
+    toast.id="toast-loading"
+    document.body.appendChild(toast)
+  }
+  toast.innerHTML=`<div class="toast-spinner"></div><span>${msg}</span>`
+  toast.classList.add("visivel")
+  if(toastTimer) clearTimeout(toastTimer)
+}
+
+function esconderLoading(){
+  const toast=document.getElementById("toast-loading")
+  if(toast) toast.classList.remove("visivel")
+}
+
+function mostrarSucesso(msg){
+  let toast=document.getElementById("toast-loading")
+  if(!toast){
+    toast=document.createElement("div")
+    toast.id="toast-loading"
+    document.body.appendChild(toast)
+  }
+  toast.innerHTML=`<span>✅ ${msg}</span>`
+  toast.classList.add("visivel","sucesso")
+  if(toastTimer) clearTimeout(toastTimer)
+  toastTimer=setTimeout(()=>{
+    toast.classList.remove("visivel","sucesso")
+  },2500)
+}
 async function imagemParaPDF(file){
   const novoPdf=await PDFLib.PDFDocument.create()
   let img
@@ -321,17 +516,20 @@ async function imagemParaPDF(file){
 }
 
 async function carregarFilesNoJuntar(files){
+  mostrarLoading("Carregando "+files.length+" arquivo"+(files.length>1?"s":"")+"...")
   for(let file of files){
     let fileFinal=file
     if(file.type!=="application/pdf"){
-      document.getElementById("juntar-info").textContent="Convertendo imagem "+file.name+"..."
+      mostrarLoading("Convertendo imagem: "+file.name+"...")
       try{ fileFinal=await imagemParaPDF(file) }
-      catch(e){ alert("Não foi possível converter: "+file.name); continue }
+      catch(e){ esconderLoading(); alert("Não foi possível converter: "+file.name); continue }
     }
     arquivos.push(fileFinal)
     const {card}=await criarThumbCard(fileFinal)
     gallery.appendChild(card)
   }
+  esconderLoading()
+  mostrarSucesso(files.length+" arquivo"+(files.length>1?"s carregados":"carregado")+"!")
   atualizarInfoJuntar()
 }
 
@@ -343,6 +541,13 @@ function atualizarInfoJuntar(){
   if(ta>0) info+=(info?" + ":"")+ta+" arquivo"+(ta>1?"s":"")
   document.getElementById("file-counter").textContent=info||"Nenhum arquivo carregado"
   document.getElementById("juntar-info").textContent=info
+  // Atualiza nome do botão
+  const btn=document.getElementById("actionBtn")
+  if(tp>0){
+    btn.textContent=tp>1?"GERAR "+tp+" PDFs (1 por pasta)":"GERAR PDF DA PASTA"
+  }else{
+    btn.textContent="CONSOLIDAR PDF"
+  }
 }
 
 function limparJuntar(){
@@ -482,6 +687,13 @@ function enviarResultadoParaOCR(){
 
 // ===================== DIVIDIR PDF =====================
 
+// ===================== DIVIDIR PDF =====================
+
+function mostrarInputDivisao(modo){
+  document.getElementById("input-pages").style.display = modo==="pages" ? "block" : "none"
+  document.getElementById("input-size").style.display  = modo==="size"  ? "block" : "none"
+}
+
 let splitFileRef=null
 
 document.getElementById("splitFileInput").addEventListener("change",async(e)=>{
@@ -511,11 +723,23 @@ function limparDividir(){
   document.getElementById("dividir-info").textContent=""
   document.getElementById("splitFileInput").value=""
   document.getElementById("resultado-dividir").style.display="none"
+  // Resetar modo de divisão
+  document.querySelectorAll('input[name="splitMode"]').forEach(r=>r.checked=false)
+  document.getElementById("input-pages").style.display="none"
+  document.getElementById("input-size").style.display="none"
+  document.getElementById("pagesPerFile").value=""
+  document.getElementById("sizePerFile").value=""
 }
 
 async function dividirPDF(){
   if(!splitFileRef){
     alert("Selecione um PDF primeiro")
+    return
+  }
+
+  const modoSelecionado=document.querySelector('input[name="splitMode"]:checked')
+  if(!modoSelecionado){
+    alert("Selecione um modo de divisão antes de continuar.")
     return
   }
 
@@ -526,7 +750,7 @@ async function dividirPDF(){
   const bytes=await file.arrayBuffer()
   const pdf=await PDFLib.PDFDocument.load(bytes)
   const totalPaginas=pdf.getPageCount()
-  const modo=document.querySelector('input[name="splitMode"]:checked').value
+  const modo=modoSelecionado.value
 
   // DIVIDIR POR QUANTIDADE DE PAGINAS
   if(modo==="pages"){
@@ -707,18 +931,34 @@ let arquivosCompactar=[]
 
 document.getElementById("compactarInput").addEventListener("change",async(e)=>{
   await carregarFilesNoCompactar(Array.from(e.target.files).filter(f=>f.type==="application/pdf"))
+  document.getElementById("compactarInput").value=""
 })
 
-document.getElementById("compactarPastaInput").addEventListener("change",async(e)=>{
-  await carregarFilesNoCompactar(Array.from(e.target.files).filter(f=>f.type==="application/pdf"))
-})
+function selecionarPastaCompactar(){
+  const input=document.createElement("input")
+  input.type="file"
+  input.webkitdirectory=true
+  input.style.display="none"
+  document.body.appendChild(input)
+  input.addEventListener("change",async(e)=>{
+    const files=Array.from(e.target.files).filter(f=>f.type==="application/pdf")
+    document.body.removeChild(input)
+    if(files.length===0){alert("Nenhum PDF encontrado na pasta.");return}
+    mostrarLoading("Carregando pasta: "+files.length+" PDF"+(files.length>1?"s":"")+"...")
+    await carregarFilesNoCompactar(files)
+  })
+  input.click()
+}
 
 async function carregarFilesNoCompactar(files){
+  mostrarLoading("Carregando "+files.length+" arquivo"+(files.length>1?"s":"")+"...")
   for(let file of files){
     arquivosCompactar.push(file)
     const {card}=await criarThumbCard(file)
     document.getElementById("compactar-lista").appendChild(card)
   }
+  esconderLoading()
+  mostrarSucesso(files.length+" arquivo"+(files.length>1?"s carregados":"carregado")+"!")
   atualizarInfoCompactar()
 }
 
@@ -734,7 +974,6 @@ function limparCompactar(){
   document.getElementById("compactar-info").textContent=""
   document.getElementById("compactar-status").textContent=""
   document.getElementById("compactarInput").value=""
-  document.getElementById("compactarPastaInput").value=""
   document.getElementById("resultado-compactar").style.display="none"
 }
 
@@ -743,29 +982,45 @@ function formatarTamanho(bytes){
   return (bytes/1024).toFixed(1)+" KB"
 }
 
-// Renderiza cada página do PDF como imagem JPEG recomprimida e monta novo PDF
-async function compactarComImagensRecomprimidas(arrayBuffer, qualidade){
-  const pdfSrc=await pdfjsLib.getDocument({data:arrayBuffer}).promise
+// Pausa para não travar o browser
+function yield_(){
+  return new Promise(r=>setTimeout(r,0))
+}
+
+// Renderiza cada página do PDF como imagem e monta novo PDF
+async function compactarComImagensRecomprimidas(arrayBuffer, qualidade, onProgresso){
+  const pdfSrc=await pdfjsLib.getDocument({data:new Uint8Array(arrayBuffer)}).promise
   const novoPdf=await PDFLib.PDFDocument.create()
-  const escala=qualidade>0.5?1.2:0.9
+
+  // Normal: JPEG 80% escala 1.2 — boa legibilidade com redução real (~40-60%)
+  // Extrema: JPEG 60% escala 1.0 — redução agressiva (~60-80%)
+  const escala=qualidade>0.5?1.2:1.0
+  const qualidadeJpeg=qualidade>0.5?0.80:0.60
+
+  const canvas=document.createElement("canvas")
+  const ctx=canvas.getContext("2d")
 
   for(let i=1;i<=pdfSrc.numPages;i++){
+    if(onProgresso) onProgresso(i, pdfSrc.numPages)
+    await yield_()
+
     const page=await pdfSrc.getPage(i)
     const viewport=page.getViewport({scale:escala})
-    const canvas=document.createElement("canvas")
     canvas.width=viewport.width
     canvas.height=viewport.height
-    await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise
+    ctx.fillStyle="#ffffff"
+    ctx.fillRect(0,0,canvas.width,canvas.height)
+    await page.render({canvasContext:ctx, viewport}).promise
+    await yield_()
 
-    const jpegDataUrl=canvas.toDataURL("image/jpeg", qualidade)
-    const jpegBase64=jpegDataUrl.split(",")[1]
-    const jpegBytes=Uint8Array.from(atob(jpegBase64),c=>c.charCodeAt(0))
-
-    const jpegImage=await novoPdf.embedJpg(jpegBytes)
+    const blob=await new Promise(res=>canvas.toBlob(res,"image/jpeg",qualidadeJpeg))
+    const jpegBytes=new Uint8Array(await blob.arrayBuffer())
+    const img=await novoPdf.embedJpg(jpegBytes)
     const pdfPage=novoPdf.addPage([viewport.width, viewport.height])
-    pdfPage.drawImage(jpegImage,{x:0,y:0,width:viewport.width,height:viewport.height})
+    pdfPage.drawImage(img,{x:0,y:0,width:viewport.width,height:viewport.height})
   }
 
+  canvas.remove()
   return await novoPdf.save({useObjectStreams:true})
 }
 
@@ -795,7 +1050,9 @@ async function compactarPDFs(){
     const arrayBuffer=await file.arrayBuffer()
     const tamanhoOriginal=arrayBuffer.byteLength
 
-    const pdfBytes=await compactarComImagensRecomprimidas(arrayBuffer, qualidade)
+    const pdfBytes=await compactarComImagensRecomprimidas(arrayBuffer, qualidade, (pag,total)=>{
+      status.textContent="Compactando "+file.name+" ("+(i+1)+"/"+arquivosCompactar.length+") — página "+pag+" de "+total+"..."
+    })
     const tamanhoFinal=pdfBytes.byteLength
 
     totalOriginal+=tamanhoOriginal
@@ -1601,190 +1858,3 @@ async function gerarPDFsDasPastas(){
   document.getElementById("resultado-juntarpastas").style.display="block"
   document.getElementById("resultado-juntarpastas").scrollIntoView({behavior:"smooth"})
 }
-
-// ===================== DRAG AND DROP GLOBAL =====================
-// Permite arrastar arquivos ou pastas diretamente para as áreas
-
-document.addEventListener("dragover",(e)=>{
-  e.preventDefault()
-})
-
-document.addEventListener("drop",(e)=>{
-  e.preventDefault()
-})
-
-// ---------- JUNTAR PDF DROP ----------
-
-const dropJuntar=document.getElementById("unificador")
-
-if(dropJuntar){
-
-dropJuntar.addEventListener("dragover",(e)=>{
-  e.preventDefault()
-  dropJuntar.classList.add("dragover")
-})
-
-dropJuntar.addEventListener("dragleave",(e)=>{
-  dropJuntar.classList.remove("dragover")
-})
-
-dropJuntar.addEventListener("drop",async(e)=>{
-  e.preventDefault()
-  dropJuntar.classList.remove("dragover")
-
-  const items=e.dataTransfer.items
-
-  if(items){
-    let files=[]
-
-    for(let i=0;i<items.length;i++){
-      const entry=items[i].webkitGetAsEntry()
-
-      if(entry && entry.isDirectory){
-        const reader=entry.createReader()
-
-        await new Promise(resolve=>{
-          reader.readEntries(async(entries)=>{
-            for(let ent of entries){
-              if(ent.isFile){
-                await new Promise(res=>{
-                  ent.file(file=>{
-                    files.push(file)
-                    res()
-                  })
-                })
-              }
-            }
-            resolve()
-          })
-        })
-
-      }else{
-        const file=items[i].getAsFile()
-        if(file) files.push(file)
-      }
-    }
-
-    if(files.length>0){
-      carregarFilesNoJuntar(files)
-    }
-  }
-
-})
-
-}
-
-// ---------- DIVIDIR PDF DROP ----------
-
-const dropDividir=document.getElementById("dividir-pdf")
-
-if(dropDividir){
-
-dropDividir.addEventListener("dragover",(e)=>{
-  e.preventDefault()
-  dropDividir.classList.add("dragover")
-})
-
-dropDividir.addEventListener("dragleave",()=>{
-  dropDividir.classList.remove("dragover")
-})
-
-dropDividir.addEventListener("drop",async(e)=>{
-  e.preventDefault()
-  dropDividir.classList.remove("dragover")
-
-  const file=e.dataTransfer.files[0]
-
-  if(file && file.type==="application/pdf"){
-    carregarFileNoDividir(file)
-  }else{
-    alert("Arraste um arquivo PDF.")
-  }
-
-})
-
-}
-
-// ---------- COMPACTAR PDF DROP ----------
-
-const dropCompactar=document.getElementById("compactar-section")
-
-if(dropCompactar){
-
-dropCompactar.addEventListener("dragover",(e)=>{
-  e.preventDefault()
-  dropCompactar.classList.add("dragover")
-})
-
-dropCompactar.addEventListener("dragleave",()=>{
-  dropCompactar.classList.remove("dragover")
-})
-
-dropCompactar.addEventListener("drop",async(e)=>{
-  e.preventDefault()
-  dropCompactar.classList.remove("dragover")
-
-  const files=Array.from(e.dataTransfer.files).filter(f=>f.type==="application/pdf")
-
-  if(files.length>0){
-    carregarFilesNoCompactar(files)
-  }else{
-    alert("Arraste arquivos PDF.")
-  }
-
-})
-
-}
-dropJuntar.addEventListener("drop", async (e) => {
-  e.preventDefault()
-  dropJuntar.classList.remove("dragover")
-
-  const items = e.dataTransfer.items
-  let arquivosDrop = []
-
-  async function lerEntrada(entry) {
-    return new Promise((resolve) => {
-
-      if (entry.isFile) {
-
-        entry.file(file => {
-          arquivosDrop.push(file)
-          resolve()
-        })
-
-      }
-
-      else if (entry.isDirectory) {
-
-        const reader = entry.createReader()
-
-        reader.readEntries(async (entries) => {
-
-          for (const ent of entries) {
-            await lerEntrada(ent)
-          }
-
-          resolve()
-
-        })
-
-      }
-
-    })
-  }
-
-  for (let i = 0; i < items.length; i++) {
-
-    const entry = items[i].webkitGetAsEntry()
-
-    if (entry) {
-      await lerEntrada(entry)
-    }
-
-  }
-
-  if (arquivosDrop.length > 0) {
-    carregarFilesNoJuntar(arquivosDrop)
-  }
-
-})
