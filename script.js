@@ -248,7 +248,8 @@ fileInput.addEventListener("change",async(e)=>{
 const DROP_ZONES={
   "#drop-zone":           "juntar",
   "#compactar-drop-zone": "compactar",
-  "#split-drop-zone":     "dividir"
+  "#split-drop-zone":     "dividir",
+  "#ocr-drop-zone":       "ocr"
 }
 
 function getZona(el){
@@ -301,6 +302,9 @@ document.addEventListener("drop",async(e)=>{
         }else if(tipo==="dividir"){
           const pdf=todos.find(f=>f.type==="application/pdf")
           if(pdf) await carregarFileNoDividir(pdf)
+        }else if(tipo==="ocr"){
+          const pdfs=todos.filter(f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name))
+          if(pdfs.length>0) await carregarFilesNoOCR(pdfs)
         }
       }else{
         const file=await entryParaFile(entry)
@@ -311,6 +315,8 @@ document.addEventListener("drop",async(e)=>{
           await carregarFilesNoCompactar([file])
         else if(tipo==="dividir"&&file.type==="application/pdf")
           await carregarFileNoDividir(file)
+        else if(tipo==="ocr"&&(file.type==="application/pdf"||/\.pdf$/i.test(file.name)))
+          await carregarFilesNoOCR([file])
       }
     }
     if(tipo==="juntar") atualizarInfoJuntar()
@@ -823,32 +829,55 @@ function enviarPartsParaJuntar(){
 // ===================== OCR =====================
 
 let ocrTextoGlobal=""
-let ocrFileRef=null
+let ocrFiles=[]
+let ocrResultados=[]
+let ocrWorkerRef=null
 
 document.getElementById("ocrInput").addEventListener("change",async(e)=>{
-  const file=e.target.files[0]
-  if(!file) return
-  await carregarFileNoOCR(file)
+  const files=Array.from(e.target.files||[])
+  if(!files.length) return
+  await carregarFilesNoOCR(files)
+  e.target.value=""
 })
 
-async function carregarFileNoOCR(file){
-  ocrFileRef=file
+async function carregarFilesNoOCR(files){
+  const validos=files.filter(f=>f && (f.type==="application/pdf" || /\.pdf$/i.test(f.name)))
+  if(validos.length===0){
+    alert("Selecione PDF(s) válido(s).")
+    return
+  }
+
+  const existentes=new Set(ocrFiles.map(f=>`${f.name}_${f.size}_${f.lastModified}`))
+  const novos=validos.filter(f=>!existentes.has(`${f.name}_${f.size}_${f.lastModified}`))
+  if(novos.length===0) return
+
+  ocrFiles.push(...novos)
   ocrTextoGlobal=""
+  ocrResultados=[]
   document.getElementById("ocr-resultado-box").style.display="none"
   document.getElementById("ocr-status").textContent=""
 
-  const ocrGallery=document.getElementById("ocr-gallery")
-  ocrGallery.innerHTML=""
+  const gallery=document.getElementById("ocr-gallery")
+  for(const file of novos){
+    try{
+      const {card}=await criarThumbCard(file)
+      gallery.appendChild(card)
+    }catch{
+      const div=document.createElement("div")
+      div.className="thumb-card"
+      div.innerHTML=`<div class="thumb-header"><strong>${file.name}</strong></div><div class="thumb-meta">PDF</div>`
+      gallery.appendChild(div)
+    }
+  }
 
-  const {card, totalPaginas}=await criarThumbCard(file)
-  ocrGallery.appendChild(card)
-
-  document.getElementById("ocr-info").textContent="1 arquivo | "+totalPaginas+" páginas | Clique na miniatura para ver páginas"
+  const totalArquivos=ocrFiles.length
+  document.getElementById("ocr-info").textContent=`${totalArquivos} arquivo(s) pronto(s) para OCR`
 }
 
 function limparOCR(){
   ocrTextoGlobal=""
-  ocrFileRef=null
+  ocrFiles=[]
+  ocrResultados=[]
   document.getElementById("ocr-gallery").innerHTML=""
   document.getElementById("ocr-status").textContent=""
   document.getElementById("ocr-resultado-box").style.display="none"
@@ -856,45 +885,147 @@ function limparOCR(){
   document.getElementById("ocrInput").value=""
 }
 
-async function reconhecerTexto(){
-  const file=ocrFileRef
+async function obterOCRWorker(statusEl){
+  if(ocrWorkerRef) return ocrWorkerRef
+  if(!window.Tesseract) throw new Error("Tesseract não carregado.")
+  statusEl.textContent="Carregando motor OCR..."
+  ocrWorkerRef=await Tesseract.createWorker('por', 1, {
+    logger: (m)=>{
+      if(m.status==='recognizing text' && Number.isFinite(m.progress)){
+        statusEl.textContent=`OCR em andamento... ${Math.round(m.progress*100)}%`
+      }
+    }
+  })
+  try{
+    await ocrWorkerRef.setParameters({
+      tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+      preserve_interword_spaces: '1'
+    })
+  }catch{}
+  return ocrWorkerRef
+}
 
-  if(!file){
-    alert("Selecione um PDF primeiro")
+function nomePdfOCR(nome){
+  return nome.replace(/\.pdf$/i,'') + '_OCR.pdf'
+}
+
+async function reconhecerTexto(){
+  if(ocrFiles.length===0){
+    alert("Selecione ao menos um PDF primeiro")
     return
   }
 
   const status=document.getElementById("ocr-status")
   const resultadoBox=document.getElementById("ocr-resultado-box")
-
-  status.textContent="Processando, aguarde..."
+  status.textContent="Preparando OCR..."
   resultadoBox.style.display="none"
   ocrTextoGlobal=""
+  ocrResultados=[]
 
-  const arrayBuffer=await file.arrayBuffer()
-  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise
-  let textoCompleto=""
+  const worker=await obterOCRWorker(status)
+  const canvas=document.createElement('canvas')
+  const ctx=canvas.getContext('2d', { willReadFrequently: true })
 
-  for(let i=1;i<=pdf.numPages;i++){
-    status.textContent="Processando página "+i+" de "+pdf.numPages+"..."
-    const page=await pdf.getPage(i)
-    const content=await page.getTextContent()
-    const textoPage=content.items.map(item=>item.str).join(" ")
-    textoCompleto+=textoPage+"\n"
+  for(let fileIndex=0; fileIndex<ocrFiles.length; fileIndex++){
+    const file=ocrFiles[fileIndex]
+    status.textContent=`Abrindo ${file.name} (${fileIndex+1}/${ocrFiles.length})...`
+
+    const sourceBytes=new Uint8Array(await file.arrayBuffer())
+    const pdfjsDoc=await pdfjsLib.getDocument({data:sourceBytes}).promise
+    const sourcePdfLib=await PDFLib.PDFDocument.load(sourceBytes)
+    const outputPdf=await PDFLib.PDFDocument.create()
+    const outputFont=await outputPdf.embedFont(PDFLib.StandardFonts.Helvetica)
+    let textoArquivo=''
+
+    for(let i=1;i<=pdfjsDoc.numPages;i++){
+      const page=await pdfjsDoc.getPage(i)
+      status.textContent=`${file.name}: página ${i} de ${pdfjsDoc.numPages}...`
+
+      const content=await page.getTextContent()
+      const textoExistente=(content.items||[]).map(item=>item.str).join(' ').trim()
+      if(textoExistente.length>20){
+        const [copiedPage]=await outputPdf.copyPages(sourcePdfLib,[i-1])
+        outputPdf.addPage(copiedPage)
+        textoArquivo+=textoExistente + "\n"
+        continue
+      }
+
+      const viewport=page.getViewport({scale:1.25})
+      canvas.width=Math.ceil(viewport.width)
+      canvas.height=Math.ceil(viewport.height)
+      ctx.clearRect(0,0,canvas.width,canvas.height)
+      await page.render({canvasContext:ctx, viewport}).promise
+
+      const {data}=await worker.recognize(canvas)
+      textoArquivo += (data.text||'') + "\n"
+
+      const jpgUrl=canvas.toDataURL('image/jpeg',0.72)
+      const jpgImg=await outputPdf.embedJpg(jpgUrl)
+      const pdfPage=outputPdf.addPage([viewport.width, viewport.height])
+      pdfPage.drawImage(jpgImg,{x:0,y:0,width:viewport.width,height:viewport.height})
+
+      const words=(data.words||[]).filter(w=>w && w.text && w.bbox)
+      for(const word of words){
+        const x0=word.bbox.x0 ?? word.bbox.left ?? 0
+        const y0=word.bbox.y0 ?? word.bbox.top ?? 0
+        const x1=word.bbox.x1 ?? word.bbox.right ?? x0
+        const y1=word.bbox.y1 ?? word.bbox.bottom ?? y0
+        const width=Math.max(1, x1-x0)
+        const height=Math.max(7, y1-y0)
+        const y=viewport.height - y1
+        const safeText=String(word.text).replace(/\s+/g,' ').trim()
+        if(!safeText) continue
+        pdfPage.drawText(safeText,{
+          x:x0,
+          y:y,
+          size:Math.max(6, Math.min(22, height*0.85)),
+          font:outputFont,
+          color:PDFLib.rgb(1,1,1),
+          opacity:0.01,
+          maxWidth:width+2,
+          lineHeight:height
+        })
+      }
+    }
+
+    const resultBytes=await outputPdf.save()
+    ocrResultados.push({
+      nome:nomePdfOCR(file.name),
+      bytes:resultBytes,
+      texto:textoArquivo.trim()
+    })
+    ocrTextoGlobal += (textoArquivo.trim() + "\n\n")
   }
 
-  if(textoCompleto.trim().length>0){
-    ocrTextoGlobal=textoCompleto
-    status.textContent="Texto reconhecido com sucesso! Clique em Copiar Texto."
-    resultadoBox.style.display="block"
-    resultadoBox.scrollIntoView({behavior:"smooth"})
-  }else{
-    status.textContent="PDF sem texto detectável."
+  status.textContent=`OCR concluído para ${ocrResultados.length} arquivo(s).`
+  resultadoBox.style.display="block"
+  resultadoBox.scrollIntoView({behavior:"smooth"})
+}
+
+async function baixarResultadosOCR(){
+  if(ocrResultados.length===0){
+    alert("Nenhum resultado OCR disponível.")
+    return
   }
+  if(ocrResultados.length===1){
+    const item=ocrResultados[0]
+    baixarArquivo(item.bytes,item.nome)
+    return
+  }
+  const JSZipCtor=await carregarJSZip()
+  const zip=new JSZipCtor()
+  for(const item of ocrResultados){
+    zip.file(item.nome,item.bytes)
+  }
+  const blob=await zip.generateAsync({type:'blob'})
+  const link=document.createElement('a')
+  link.href=URL.createObjectURL(blob)
+  link.download='OCR_Resultados.zip'
+  link.click()
 }
 
 function copiarTexto(){
-  if(!ocrTextoGlobal){
+  if(!ocrTextoGlobal.trim()){
     alert("Nenhum texto reconhecido ainda.")
     return
   }
@@ -903,27 +1034,13 @@ function copiarTexto(){
   })
 }
 
-function enviarOCRFileParaJuntar(){
-  if(!ocrFileRef) return
-  const file=ocrFileRef
-  limparOCR()
-  abrirUnificador([file])
+async function encerrarOCRWorker(){
+  if(ocrWorkerRef){
+    try{ await ocrWorkerRef.terminate() }catch{}
+    ocrWorkerRef=null
+  }
 }
-
-function enviarOCRFileParaCompactar(){
-  if(!ocrFileRef) return
-  const file=ocrFileRef
-  limparOCR()
-  abrirCompactar([file])
-}
-
-function enviarOCRFileParaDividir(){
-  if(!ocrFileRef) return
-  const file=ocrFileRef
-  limparOCR()
-  abrirDividir(file)
-}
-
+window.addEventListener('beforeunload', ()=>{ encerrarOCRWorker() })
 
 // ===================== COMPACTAR PDF =====================
 
