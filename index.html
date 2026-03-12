@@ -40,8 +40,7 @@
       </div>
     </div>
 
-    <div class="menu-section-label">✅ Disponível agora</div>
-    <div class="tools-grid">
+    <div class="tools-grid tools-grid-menu">
 
       <div class="tool-card active" onclick="abrirUnificador()">
         <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
@@ -76,17 +75,13 @@
         <div class="tool-card-arrow">→</div>
       </div>
 
-    </div>
-
-    <div class="menu-section-label soon-label">🚀 Em breve</div>
-    <div class="tools-grid tools-grid-soon">
-
       <div class="tool-card soon">
         <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
           <span>🔎</span>
         </div>
         <div class="tool-card-body">
           <h3>Reconhecimento de Texto</h3>
+          <p>Transforme PDFs escaneados em PDFs pesquisáveis</p>
         </div>
         <div class="soon-badge">Em breve</div>
       </div>
@@ -97,6 +92,7 @@
         </div>
         <div class="tool-card-body">
           <h3>PDF para Word</h3>
+          <p>Extraia o conteúdo do PDF para um documento editável</p>
         </div>
         <div class="soon-badge">Em breve</div>
       </div>
@@ -107,6 +103,7 @@
         </div>
         <div class="tool-card-body">
           <h3>Word para PDF</h3>
+          <p>Converta documentos Word para PDF</p>
         </div>
         <div class="soon-badge">Em breve</div>
       </div>
@@ -117,6 +114,7 @@
         </div>
         <div class="tool-card-body">
           <h3>Excel para PDF</h3>
+          <p>Transforme planilhas em arquivos PDF</p>
         </div>
         <div class="soon-badge">Em breve</div>
       </div>
@@ -127,6 +125,51 @@
         </div>
         <div class="tool-card-body">
           <h3>Excel para Word</h3>
+          <p>Leve o conteúdo da planilha para um documento Word</p>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+          <span>📘</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Edital PDF</h3>
+          <p>Ferramenta dedicada para leitura e tratamento de editais</p>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#f97316,#ea580c)">
+          <span>📽️</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>PowerPoint para PDF</h3>
+          <p>Converta apresentações para PDF</p>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#14b8a6,#0f766e)">
+          <span>✍️</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Assinar PDF</h3>
+          <p>Adicione assinatura e valide documentos em PDF</p>
+        </div>
+        <div class="soon-badge">Em breve</div>
+      </div>
+
+      <div class="tool-card soon">
+        <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#6366f1,#4338ca)">
+          <span>🗂️</span>
+        </div>
+        <div class="tool-card-body">
+          <h3>Reorganizar PDF</h3>
+          <p>Reordene, remova e ajuste páginas com precisão</p>
         </div>
         <div class="soon-badge">Em breve</div>
       </div>
@@ -155,7 +198,7 @@
     <div id="drop-zone" class="drop-zone">
       <input type="file" id="fileInput" multiple accept="application/pdf,image/*" hidden>
       <h3>Arraste arquivos ou pastas aqui</h3>
-      <p>ou selecione abaixo</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="fileInput.click()" class="btn primary">Selecionar Arquivos</button>
         <button onclick="selecionarPasta()" class="btn primary">Selecionar Pasta</button>
@@ -183,7 +226,6 @@
           <button onclick="baixarResultadoJuntar()" class="btn generate">⬇ Baixar PDF</button>
           <button onclick="enviarResultadoParaDividir()" class="btn atalho">✂️ Dividir</button>
           <button onclick="enviarResultadoParaCompactar()" class="btn atalho">🗜️ Compactar</button>
-          <button onclick="enviarResultadoParaOCR()" class="btn atalho">🔎 Reconhecer Texto</button>
         </div>
       </div>
     </div>
@@ -223,8 +265,8 @@
 
     <div id="split-drop-zone" class="drop-zone">
       <input type="file" id="splitFileInput" accept="application/pdf" hidden>
-      <h3>Arraste o PDF aqui</h3>
-      <p>ou selecione abaixo</p>
+      <h3>Arraste um ou mais PDFs aqui</h3>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="splitFileInput.click()" class="btn primary">Selecionar PDF</button>
       </div>
@@ -298,11 +340,11 @@
     </div>
 
     <div id="ocr-drop-zone" class="drop-zone">
-      <input type="file" id="ocrInput" accept="application/pdf" hidden>
-      <h3>Arraste o PDF aqui</h3>
-      <p>ou selecione abaixo</p>
+      <input type="file" id="ocrInput" accept="application/pdf" multiple hidden>
+      <h3>Arraste um ou mais PDFs aqui</h3>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
-        <button onclick="ocrInput.click()" class="btn primary">Selecionar PDF</button>
+        <button onclick="ocrInput.click()" class="btn primary">Selecionar PDFs</button>
       </div>
     </div>
 
@@ -312,19 +354,17 @@
 
     <div id="ocr-resultado-box" style="display:none">
       <div class="resultado-acoes" style="margin-top:20px">
-        <p class="resultado-label">Texto reconhecido! O que deseja fazer?</p>
+        <p class="resultado-label">OCR concluído. Baixe os arquivos pesquisáveis ou copie o texto.</p>
         <div class="resultado-btns">
-          <button onclick="copiarTexto()" class="btn generate">📋 Copiar Texto</button>
-          <button onclick="enviarOCRFileParaJuntar()" class="btn atalho">📄 Juntar PDF</button>
-          <button onclick="enviarOCRFileParaCompactar()" class="btn atalho">🗜️ Compactar PDF</button>
-          <button onclick="enviarOCRFileParaDividir()" class="btn atalho">✂️ Dividir PDF</button>
+          <button onclick="baixarResultadosOCR()" class="btn generate">⬇️ Baixar OCR</button>
+          <button onclick="copiarTexto()" class="btn atalho">📋 Copiar Texto</button>
         </div>
       </div>
     </div>
 
     <div class="fixed-bar">
       <span id="ocr-info" class="bar-info"></span>
-      <button onclick="reconhecerTexto()" class="btn generate">RECONHECER TEXTO</button>
+      <button onclick="reconhecerTexto()" class="btn generate">GERAR PDF PESQUISÁVEL</button>
       <button onclick="limparOCR()" class="btn danger">🗑 Limpar Tudo</button>
 
     </div>
@@ -351,7 +391,7 @@
     <div id="compactar-drop-zone" class="drop-zone">
       <input type="file" id="compactarInput" accept="application/pdf" multiple hidden>
       <h3>Arraste PDFs ou pastas aqui</h3>
-      <p>ou selecione abaixo</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="compactarInput.click()" class="btn primary">Selecionar Arquivos</button>
         <button onclick="selecionarPastaCompactar()" class="btn primary">Selecionar Pasta</button>
@@ -387,7 +427,6 @@
           <button onclick="baixarResultadosCompactar()" class="btn generate">⬇ Baixar Arquivos</button>
           <button onclick="enviarCompactadosParaJuntar()" class="btn atalho">📄 Juntar PDFs</button>
           <button onclick="enviarCompactadosParaDividir()" class="btn atalho">✂️ Dividir PDF</button>
-          <button onclick="enviarCompactadosParaOCR()" class="btn atalho">🔎 Reconhecer Texto</button>
         </div>
       </div>
     </div>
@@ -414,8 +453,8 @@
 
     <div id="converter-drop-zone" class="drop-zone">
       <input type="file" id="converterInput" accept="application/pdf" hidden>
-      <h3>Arraste o PDF aqui</h3>
-      <p>ou selecione abaixo</p>
+      <h3>Arraste um ou mais PDFs aqui</h3>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="converterInput.click()" class="btn primary">Selecionar PDF</button>
       </div>
@@ -457,7 +496,7 @@
     <div id="wordpdf-drop-zone" class="drop-zone">
       <input type="file" id="wordpdfInput" accept=".doc,.docx,.odt,.rtf" hidden>
       <h3>Arraste o arquivo Word aqui</h3>
-      <p>ou selecione abaixo</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="wordpdfInput.click()" class="btn primary">Selecionar Word (.docx)</button>
       </div>
@@ -496,7 +535,7 @@
     <div id="excelpdf-drop-zone" class="drop-zone">
       <input type="file" id="excelpdfInput" accept=".xls,.xlsx,.xlsm,.xlsb,.csv,.ods" hidden>
       <h3>Arraste o arquivo Excel aqui</h3>
-      <p>ou selecione abaixo</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="excelpdfInput.click()" class="btn primary">Selecionar Excel (.xlsx)</button>
       </div>
@@ -535,7 +574,7 @@
     <div id="excelword-drop-zone" class="drop-zone">
       <input type="file" id="excelwordInput" accept=".xls,.xlsx,.xlsm,.xlsb,.csv,.ods" hidden>
       <h3>Arraste o arquivo Excel aqui</h3>
-      <p>ou selecione abaixo</p>
+      <p>ou selecione abaixo para gerar PDF pesquisável</p>
       <div class="drop-buttons">
         <button onclick="excelwordInput.click()" class="btn primary">Selecionar Excel (.xlsx)</button>
       </div>
