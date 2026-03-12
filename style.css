@@ -400,3 +400,427 @@ textarea{
   .container{padding:12px 14px}
   .tools-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
 }
+
+/* ===== NOVO MENU ===== */
+
+.menu-hero{
+  background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);
+  border-radius:16px;
+  padding:28px 28px 24px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+}
+
+.menu-hero::before{
+  content:'';
+  position:absolute;
+  top:-40px;right:-40px;
+  width:200px;height:200px;
+  background:rgba(255,255,255,0.05);
+  border-radius:50%;
+}
+
+.menu-hero::after{
+  content:'';
+  position:absolute;
+  bottom:-60px;right:60px;
+  width:150px;height:150px;
+  background:rgba(255,255,255,0.04);
+  border-radius:50%;
+}
+
+.menu-hero-text h1{
+  font-size:24px;
+  font-weight:800;
+  color:white;
+  margin:0 0 6px;
+}
+
+.menu-hero-text h1 span{
+  color:#a5b4fc;
+}
+
+.menu-hero-text p{
+  font-size:13px;
+  color:#c7d2fe;
+  margin:0;
+}
+
+.menu-section-label{
+  font-size:12px;
+  font-weight:700;
+  color:#374151;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin-bottom:10px;
+}
+
+.soon-label{
+  margin-top:24px;
+  color:#6b7280;
+}
+
+.tools-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.tools-grid-soon{
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+}
+
+.tool-card{
+  background:white;
+  border-radius:14px;
+  border:1.5px solid #e5e7eb;
+  padding:16px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+  overflow:hidden;
+}
+
+.tool-card.active:hover{
+  border-color:#4f46e5;
+  box-shadow:0 6px 20px rgba(79,70,229,0.12);
+  transform:translateY(-2px);
+}
+
+.tool-card.soon{
+  cursor:default;
+  opacity:0.7;
+}
+
+.tool-icon-wrap{
+  width:46px;
+  height:46px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+.tool-card-body{
+  flex:1;
+  min-width:0;
+}
+
+.tool-card-body h3{
+  font-size:14px;
+  font-weight:700;
+  margin:0 0 3px;
+  color:#111827;
+}
+
+.tool-card-body p{
+  font-size:11px;
+  color:#6b7280;
+  margin:0;
+  line-height:1.4;
+}
+
+.tool-card-arrow{
+  font-size:16px;
+  color:#4f46e5;
+  font-weight:700;
+  flex-shrink:0;
+}
+
+.soon-badge{
+  background:#f3f4f6;
+  color:#9ca3af;
+  font-size:10px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:20px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+@media(max-width:700px){
+  .tools-grid{grid-template-columns:1fr}
+  .tools-grid-soon{grid-template-columns:1fr}
+  .menu-hero{padding:20px 18px}
+  .menu-hero-text h1{font-size:20px}
+}
+
+.drop-zone.drag-over{
+  border-color:#4f46e5;
+  background:#f0f0ff;
+}
+
+/* ===== MELHORIAS DE LAYOUT INTERNO ===== */
+
+/* Header das seções com linha separadora */
+.unificador-header{
+  background:white;
+  border-radius:12px;
+  padding:14px 16px;
+  border:1px solid #e5e7eb;
+  margin-bottom:12px;
+}
+
+/* Drop-zone mais atraente */
+.drop-zone{
+  border:2px dashed #c7d2fe;
+  background:linear-gradient(135deg,#fafbff,#f5f3ff);
+  transition:all .2s;
+}
+
+.drop-zone:hover{
+  border-color:#4f46e5;
+  background:linear-gradient(135deg,#f0f0ff,#ede9fe);
+}
+
+.drop-zone h3{color:#4f46e5}
+
+/* Caixas de opções (rádio, nome arquivo) */
+.file-name-box{
+  background:white;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:14px 16px;
+  margin-top:12px;
+}
+
+.radio-group label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.15s;
+  border:1px solid transparent;
+}
+
+.radio-group label:hover{
+  background:#f5f3ff;
+  border-color:#c4b5fd;
+}
+
+.radio-group input[type="radio"]:checked + *,
+.radio-group label:has(input:checked){
+  background:#f5f3ff;
+  border-color:#4f46e5;
+  color:#4f46e5;
+  font-weight:600;
+}
+
+/* Resultado painel mais bonito */
+.resultado-painel{
+  border:1.5px solid #e5e7eb;
+  background:linear-gradient(135deg,#fafffe,#f0fdf4);
+}
+
+.resultado-label{
+  color:#059669;
+  font-size:14px;
+}
+
+/* ===== HOVER NOS BOTÕES ===== */
+
+.btn{
+  transition:all .15s;
+  position:relative;
+  overflow:hidden;
+}
+
+.btn:hover{
+  filter:brightness(1.08);
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active{
+  transform:translateY(0px);
+  filter:brightness(0.96);
+  box-shadow:none;
+}
+
+.btn.primary:hover{box-shadow:0 4px 14px rgba(79,70,229,0.35)}
+.btn.generate:hover{box-shadow:0 4px 14px rgba(16,185,129,0.35)}
+.btn.danger:hover{box-shadow:0 4px 14px rgba(239,68,68,0.35)}
+.btn.atalho:hover{background:#ede9fe;color:#4f46e5;border-color:#c4b5fd;transform:translateY(-1px)}
+
+.btn-voltar:hover{
+  background:#f5f3ff;
+  border-color:#c4b5fd;
+  color:#4f46e5;
+}
+
+/* Barra fixa mais refinada */
+.fixed-bar{
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(8px);
+  border-top:1.5px solid #e5e7eb;
+}
+
+/* Miniaturas com borda colorida no hover */
+.thumb-card:hover{
+  border-color:#4f46e5;
+}
+
+/* Pasta thumb hover */
+.pasta-thumb-card:hover .pasta-thumb-icon{
+  transform:scale(1.1);
+  transition:.2s;
+}
+
+/* Input condicional no dividir */
+.input-divisao{
+  margin:-4px 0 4px 28px;
+}
+
+.input-divisao input{
+  width:100%;
+  max-width:280px;
+  padding:7px 10px;
+  border-radius:7px;
+  border:1.5px solid #c4b5fd;
+  font-size:13px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:#faf5ff;
+  color:#4f46e5;
+  font-weight:600;
+  outline:none;
+  transition:.15s;
+}
+
+.input-divisao input:focus{
+  border-color:#4f46e5;
+  box-shadow:0 0 0 3px rgba(79,70,229,0.1);
+}
+
+/* ===== NOVO HEADER DAS SEÇÕES ===== */
+.sec-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:white;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:12px 16px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.sec-header-info{
+  flex:1;
+  min-width:120px;
+}
+
+.sec-header-info h2{
+  font-size:16px;
+  font-weight:800;
+  margin:0 0 2px;
+  color:#111827;
+}
+
+.sec-header-info p{
+  font-size:11px;
+  color:#6b7280;
+  margin:0;
+}
+
+.btn-voltar{
+  background:#f5f3ff;
+  border:1.5px solid #c4b5fd;
+  border-radius:8px;
+  padding:7px 14px;
+  cursor:pointer;
+  font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;
+  color:#4f46e5;
+  white-space:nowrap;
+  transition:.15s;
+}
+
+.btn-voltar:hover{
+  background:#ede9fe;
+  border-color:#7c3aed;
+  color:#7c3aed;
+  transform:translateX(-2px);
+}
+
+.sec-atalhos{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.sec-atalho-label{
+  font-size:11px;
+  color:#9ca3af;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+@media(max-width:600px){
+  .sec-header{gap:8px;padding:10px 12px}
+  .sec-atalhos{width:100%}
+}
+
+/* ===== TOAST DE CARREGAMENTO ===== */
+#toast-loading{
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#1e1b4b;
+  color:white;
+  padding:10px 20px;
+  border-radius:30px;
+  font-size:13px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  z-index:999;
+  opacity:0;
+  transition:all .25s ease;
+  pointer-events:none;
+  white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,0.25);
+}
+
+#toast-loading.visivel{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+#toast-loading.sucesso{
+  background:#065f46;
+}
+
+.toast-spinner{
+  width:14px;
+  height:14px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:white;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  flex-shrink:0;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+/* Filhos da drop-zone não devem interceptar eventos de drag */
+.drop-zone *{
+  pointer-events: none;
+}
+/* Mas botões dentro precisam ser clicáveis normalmente */
+.drop-zone .drop-buttons button{
+  pointer-events: auto;
+}
