@@ -182,15 +182,21 @@ async function criarThumbCard(file){
 
   // Placeholder imediato — sem bloquear
   const canvas=document.createElement("canvas")
-  canvas.width=94
-  canvas.height=120
+  canvas.width=148
+  canvas.height=172
   const ctx=canvas.getContext("2d")
-  ctx.fillStyle="#f3f4f6"
-  ctx.fillRect(0,0,94,120)
-  ctx.fillStyle="#9ca3af"
-  ctx.font="28px sans-serif"
+  const grad=ctx.createLinearGradient(0,0,0,172)
+  grad.addColorStop(0,"#f8fafc")
+  grad.addColorStop(1,"#e5edf8")
+  ctx.fillStyle=grad
+  ctx.fillRect(0,0,148,172)
+  ctx.fillStyle="#4f46e5"
+  ctx.font="700 44px sans-serif"
   ctx.textAlign="center"
-  ctx.fillText("📄",47,65)
+  ctx.fillText("PDF",74,96)
+  ctx.fillStyle="#94a3b8"
+  ctx.font="600 12px sans-serif"
+  ctx.fillText("Carregando prévia",74,122)
 
   const nome=document.createElement("div")
   nome.className="thumb-nome"
@@ -507,6 +513,26 @@ function mostrarSucesso(msg){
     toast.classList.remove("visivel","sucesso")
   },2500)
 }
+
+function atualizarProgressoJuntar(percentual, titulo="", subtitulo=""){
+  const card=document.getElementById("juntar-progress-card")
+  const fill=document.getElementById("juntar-progress-fill")
+  const label=document.getElementById("juntar-progress-label")
+  const percent=document.getElementById("juntar-progress-percent")
+  const sub=document.getElementById("juntar-progress-subtext")
+  if(!card || !fill || !label || !percent || !sub) return
+  card.style.display="block"
+  const seguro=Math.max(0,Math.min(100,Math.round(percentual||0)))
+  fill.style.width=seguro+"%"
+  percent.textContent=seguro+"%"
+  if(titulo) label.textContent=titulo
+  if(subtitulo!==undefined) sub.textContent=subtitulo
+}
+
+function ocultarProgressoJuntar(){
+  const card=document.getElementById("juntar-progress-card")
+  if(card) card.style.display="none"
+}
 async function imagemParaPDF(file){
   const novoPdf=await PDFLib.PDFDocument.create()
   let img
@@ -569,7 +595,9 @@ function limparJuntar(){
   document.getElementById("resultado-juntar").style.display="none"
   document.getElementById("resultado-pastas").style.display="none"
   document.getElementById("resultado-pastas-btns").innerHTML=""
-  document.getElementById("finalFileName").value=""
+  const nomeInput=document.getElementById("finalFileName")
+  if(nomeInput) nomeInput.value=""
+  ocultarProgressoJuntar()
 }
 
 document.getElementById("actionBtn").addEventListener("click",async()=>{
@@ -585,16 +613,25 @@ document.getElementById("actionBtn").addEventListener("click",async()=>{
 })
 
 async function gerarPDFAvulsos(){
+  document.getElementById("resultado-juntar").style.display="none"
+  atualizarProgressoJuntar(0,"Consolidando PDFs","Preparando arquivos...")
   document.getElementById("juntar-info").textContent="Consolidando PDFs..."
+
   const mergedPdf=await PDFLib.PDFDocument.create()
-  for(let file of arquivos){
+  const totalArquivos=arquivos.length
+
+  for(let i=0;i<totalArquivos;i++){
+    const file=arquivos[i]
+    atualizarProgressoJuntar((i/Math.max(totalArquivos,1))*100,"Consolidando PDFs",`Processando ${i+1} de ${totalArquivos}: ${file.name}`)
     const bytes=await file.arrayBuffer()
     const pdf=await PDFLib.PDFDocument.load(bytes)
     const pages=await mergedPdf.copyPages(pdf,pdf.getPageIndices())
     pages.forEach(p=>mergedPdf.addPage(p))
   }
+
+  atualizarProgressoJuntar(96,"Finalizando PDF","Salvando arquivo unificado...")
   resultadoJuntarBytes=await mergedPdf.save()
-  const nomeInput=document.getElementById("finalFileName").value.trim()
+  const nomeInput=(document.getElementById("finalFileName")?.value || "").trim()
   resultadoJuntarNome=(nomeInput||"arquivo_unificado")+".pdf"
   const resultadoFile=bytesParaFile(resultadoJuntarBytes,resultadoJuntarNome)
   const previewCanvas=document.getElementById("preview-juntar")
@@ -604,6 +641,7 @@ async function gerarPDFAvulsos(){
   document.getElementById("resultado-juntar").style.display="block"
   document.getElementById("resultado-juntar").scrollIntoView({behavior:"smooth"})
   document.getElementById("juntar-info").textContent=arquivos.length+" arquivo(s) consolidados em "+totalPags+" páginas"
+  atualizarProgressoJuntar(100,"PDF pronto","Consolidação concluída com sucesso.")
 }
 
 async function gerarPDFsPorPasta(){
@@ -614,17 +652,20 @@ async function gerarPDFsPorPasta(){
 
   const todasPastas=[...pastasJuntar]
   if(arquivos.length>0){
-    const nomeAvulso=document.getElementById("finalFileName").value.trim()||"Arquivos_Avulsos"
+    const nomeAvulso=(document.getElementById("finalFileName")?.value || "").trim()||"Arquivos_Avulsos"
     todasPastas.push({nomePasta:nomeAvulso,arquivos})
   }
 
   for(let i=0;i<todasPastas.length;i++){
     const {nomePasta,arquivos:arqs}=todasPastas[i]
+    atualizarProgressoJuntar((i/Math.max(todasPastas.length,1))*100,"Gerando PDFs por pasta",`Pasta ${i+1} de ${todasPastas.length}: ${nomePasta}`)
     document.getElementById("juntar-info").textContent="Gerando: "+nomePasta+" ("+(i+1)+"/"+todasPastas.length+")..."
     const mergedPdf=await PDFLib.PDFDocument.create()
     const ordenados=[...arqs].sort((a,b)=>(a.webkitRelativePath||a.name).localeCompare(b.webkitRelativePath||b.name))
-    for(let file of ordenados){
+    for(let j=0;j<ordenados.length;j++){
+      const file=ordenados[j]
       try{
+        atualizarProgressoJuntar((((i)+(j+1)/Math.max(ordenados.length,1))/Math.max(todasPastas.length,1))*100,"Gerando PDFs por pasta",`Pasta ${i+1}/${todasPastas.length} · arquivo ${j+1}/${ordenados.length}: ${file.name}`)
         let f=file
         if(file.type!=="application/pdf") f=await imagemParaPDF(file)
         const bytes=await f.arrayBuffer()
@@ -654,6 +695,7 @@ async function gerarPDFsPorPasta(){
   document.getElementById("juntar-info").textContent=todasPastas.length+" PDF"+(todasPastas.length>1?"s gerados":"gerado")+"!"
   document.getElementById("resultado-pastas").style.display="block"
   document.getElementById("resultado-pastas").scrollIntoView({behavior:"smooth"})
+  atualizarProgressoJuntar(100,"PDFs prontos","Os arquivos por pasta já podem ser baixados.")
 }
 
 async function baixarTudoZipado(){
