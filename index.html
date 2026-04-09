@@ -30,7 +30,19 @@
     <span class="sec-atalho-label">Ir para:</span>
     <button onclick="irParaFerramenta('juntar')" class="btn atalho">📄 Juntar PDF</button>
     <button onclick="irParaFerramenta('dividir')" class="btn atalho">✂️ Dividir PDF</button>
-    <button onclick="irParaFerramenta('compactar')" class="btn atalho">🗜️ Compactar PDF</button>
+  </div>
+  <div class="topbar-actions">
+    <button id="updates-toggle" type="button" class="updates-toggle" aria-label="Abrir atualizacoes" aria-expanded="false">
+      <span class="updates-toggle-icon">&#128276;</span>
+      <span id="updates-count" class="updates-count">0</span>
+    </button>
+    <div id="updates-panel" class="updates-panel" style="display:none">
+      <div class="updates-panel-header">
+        <strong>Atualizacoes</strong>
+        <span id="updates-panel-badge" class="updates-panel-badge">0 itens</span>
+      </div>
+      <div id="updates-list" class="updates-list"></div>
+    </div>
   </div>
 </header>
 
@@ -70,7 +82,7 @@
         <div class="tool-card-arrow">→</div>
       </div>
 
-      <div class="tool-card active" onclick="abrirCompactar()">
+      <div class="tool-card soon">
         <div class="tool-icon-wrap" style="background:linear-gradient(135deg,#10b981,#059669)">
           <span>🗜️</span>
         </div>
@@ -78,7 +90,7 @@
           <h3>Compactar PDF</h3>
           <p>Reduza o tamanho dos arquivos sem perder qualidade</p>
         </div>
-        <div class="tool-card-arrow">→</div>
+        <div class="soon-badge">Em breve</div>
       </div>
 
       <div class="tool-card soon">
@@ -197,8 +209,8 @@
     </div>
 
     <div id="drop-zone" class="drop-zone">
-      <input type="file" id="fileInput" multiple accept="application/pdf,image/*,.zip,application/zip" hidden>
-      <h3>Arraste arquivos, pastas ou ZIP aqui</h3>
+      <input type="file" id="fileInput" multiple accept="application/pdf,image/*,.zip,.rar,.7z,.tar,.gz,.tgz,.bz2,.xz,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/vnd.rar,application/x-7z-compressed" hidden>
+      <h3>Arraste arquivos, pastas ou compactados aqui</h3>
       <p>ou selecione abaixo para gerar PDF pesquisável (também aceita ZIP)</p>
       <div class="drop-buttons">
         <button onclick="fileInput.click()" class="btn primary">Selecionar Arquivos</button>
@@ -237,7 +249,6 @@
         <div class="resultado-btns">
           <button onclick="baixarResultadoJuntar()" class="btn generate">⬇ Baixar PDF</button>
           <button onclick="enviarResultadoParaDividir()" class="btn atalho">✂️ Dividir</button>
-          <button onclick="enviarResultadoParaCompactar()" class="btn atalho">🗜️ Compactar</button>
         </div>
       </div>
     </div>
@@ -271,7 +282,6 @@
       <div class="sec-atalhos">
         <span class="sec-atalho-label">Ir para:</span>
         <button onclick="voltarMenu();abrirUnificador()" class="btn atalho">📄 Juntar</button>
-        <button onclick="voltarMenu();abrirCompactar()" class="btn atalho">🗜️ Compactar</button>
       </div>
     </div>
 
@@ -325,7 +335,6 @@
         <p class="resultado-label">Divisão concluída! O que deseja fazer?</p>
         <div class="resultado-btns">
           <button onclick="baixarResultadosDividir()" class="btn generate">⬇ Baixar Arquivos</button>
-          <button onclick="enviarPartsParaCompactar()" class="btn atalho">🗜️ Compactar partes</button>
           <button onclick="enviarPartsParaJuntar()" class="btn atalho">📄 Juntar partes</button>
         </div>
       </div>
@@ -483,7 +492,6 @@
         <div class="resultado-btns">
           <button onclick="baixarResultadoWord()" class="btn generate">⬇ Baixar Word (.docx)</button>
           <button onclick="enviarConverterParaJuntar()" class="btn atalho">📄 Juntar PDF</button>
-          <button onclick="enviarConverterParaCompactar()" class="btn atalho">🗜️ Compactar PDF</button>
         </div>
       </div>
     </div>
@@ -522,7 +530,6 @@
         <p class="resultado-label">Conversão concluída! O que deseja fazer?</p>
         <div class="resultado-btns">
           <button onclick="baixarResultadoWordPDF()" class="btn generate">⬇ Baixar PDF</button>
-          <button onclick="enviarWordPDFParaCompactar()" class="btn atalho">🗜️ Compactar PDF</button>
           <button onclick="enviarWordPDFParaDividir()" class="btn atalho">✂️ Dividir PDF</button>
           <button onclick="enviarWordPDFParaJuntar()" class="btn atalho">📄 Juntar PDF</button>
         </div>
@@ -561,7 +568,6 @@
         <p class="resultado-label">Conversão concluída! O que deseja fazer?</p>
         <div class="resultado-btns">
           <button onclick="baixarResultadoExcelPDF()" class="btn generate">⬇ Baixar PDF</button>
-          <button onclick="enviarExcelPDFParaCompactar()" class="btn atalho">🗜️ Compactar PDF</button>
           <button onclick="enviarExcelPDFParaDividir()" class="btn atalho">✂️ Dividir PDF</button>
           <button onclick="enviarExcelPDFParaJuntar()" class="btn atalho">📄 Juntar PDF</button>
         </div>
@@ -625,7 +631,9 @@
 
     <div class="pastas-adicionar" id="pastas-adicionar-btn">
       <input type="file" id="pastaInput" webkitdirectory hidden>
+      <input type="file" id="pastaCompactadoInput" accept=".zip,.rar,.7z,.tar,.gz,.tgz,.bz2,.xz,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/vnd.rar,application/x-7z-compressed" hidden>
       <button onclick="adicionarPasta()" class="btn primary" id="btn-add-pasta">+ Adicionar Pasta</button>
+      <button onclick="adicionarCompactadoJuntarPastas()" class="btn atalho" id="btn-add-compactado">+ Adicionar Compactado</button>
       <span id="pastas-contador" style="font-size:13px;color:#6b7280;margin-left:12px"></span>
     </div>
 
